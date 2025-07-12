@@ -70,7 +70,7 @@ resource "google_container_cluster" "primary" {
 
   # Release channel
   release_channel {
-    channel = "regular"
+    channel = "REGULAR"
   }
 
   # Maintenance policy
