@@ -1,0 +1,26 @@
+configMap:
+  LANGFLOW_DATABASE_URL: "postgresql://<USER>:<PASSWORD>@127.0.0.1:5432/<DB_NAME>"
+  LANGFLOW_AUTO_LOGIN: "false"
+  LANGFLOW_SUPERUSER: "admin"
+  LANGFLOW_SUPERUSER_PASSWORD: "<superuser-password>"
+  LANGFLOW_SECRET_KEY: "<random-secret-key>"
+  LANGFLOW_NEW_USER_IS_ACTIVE: "false"
+  LANGFLOW_CACHE_TYPE: "redis"
+  LANGFLOW_REDIS_URL: "redis://:<redis-password>@<redis-service>:6379/1"
+  LANGFLOW_LOG_LEVEL: "info"
+
+image:
+  tag: "latest"
+
+INGRESS:
+  ENABLE: true
+  HOSTS:
+    - HOST: "langflow.example.com"
+
+resources:
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+  requests:
+    cpu: "500m"
+    memory: "1Gi" 

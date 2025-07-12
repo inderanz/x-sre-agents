@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "langflow.fullname" . }}
+  labels:
+    app: {{ template "langflow.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    component: "{{ .Values.name }}"
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ template "langflow.name" . }}
+      component: "{{ .Values.name }}"
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        app: {{ template "langflow.name" . }}
+        component: "{{ .Values.name }}"
+        release: {{ .Release.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 7860
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 7860
+            initialDelaySeconds: 120
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: LANGFLOW_DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_DATABASE_URL
+                  name: langflow-configmap
+            - name: LANGFLOW_NEW_USER_IS_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_NEW_USER_IS_ACTIVE
+                  name: langflow-configmap
+            - name: LANGFLOW_SUPERUSER
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_SUPERUSER
+                  name: langflow-configmap
+            - name: LANGFLOW_SUPERUSER_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_SUPERUSER_PASSWORD
+                  name: langflow-configmap
+            - name: LANGFLOW_LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_LOG_LEVEL
+                  name: langflow-configmap
+            - name: OPENAI_API_KEY
+              valueFrom:
+                configMapKeyRef:
+                  key: OPENAI_API_KEY
+                  name: langflow-configmap
+            - name: LANGFLOW_CACHE_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_CACHE_TYPE
+                  name: langflow-configmap
+            - name: LANGFLOW_REDIS_CACHE_EXPIRE
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_REDIS_CACHE_EXPIRE
+                  name: langflow-configmap
+            - name: LANGFLOW_REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_REDIS_URL
+                  name: langflow-configmap
+            - name: LANGFLOW_AUTO_LOGIN
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_AUTO_LOGIN
+                  name: langflow-configmap
+            - name: LANGFLOW_SECRET_KEY
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_SECRET_KEY
+                  name: langflow-configmap
+            {{ if .Values.configMap.LANGFLOW_LANGFUSE_HOST }}
+            - name: LANGFLOW_LANGFUSE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_LANGFUSE_HOST
+                  name: langflow-configmap
+            {{ end }}
+            {{ if .Values.configMap.LANGFLOW_LANGFUSE_SECRET_KEY }}
+            - name: LANGFLOW_LANGFUSE_SECRET_KEY
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_LANGFUSE_SECRET_KEY
+                  name: langflow-configmap
+            {{ end }}
+            {{ if .Values.configMap.LANGFLOW_LANGFUSE_PUBLIC_KEY }}
+            - name: LANGFLOW_LANGFUSE_PUBLIC_KEY
+              valueFrom:
+                configMapKeyRef:
+                  key: LANGFLOW_LANGFUSE_PUBLIC_KEY
+                  name: langflow-configmap
+            {{ end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

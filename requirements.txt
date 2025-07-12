@@ -1,0 +1,14 @@
+google-cloud-pubsub
+google-cloud-spanner
+google-cloud-bigquery
+google-cloud-logging
+google-cloud-container
+openai
+langflow
+gemini-cli
+fastapi
+uvicorn
+pydantic
+pytest
+requests
+a2a-sdk

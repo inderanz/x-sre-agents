@@ -1,0 +1,25 @@
+configMap:
+  LANGFLOW_DATABASE_URL: "sqlite:///langflow.db"
+  LANGFLOW_AUTO_LOGIN: "true"
+  LANGFLOW_SUPERUSER: "admin"
+  LANGFLOW_SUPERUSER_PASSWORD: "admin"
+  LANGFLOW_SECRET_KEY: "dev-secret-key"
+  LANGFLOW_NEW_USER_IS_ACTIVE: "true"
+  LANGFLOW_CACHE_TYPE: "memory"
+  LANGFLOW_LOG_LEVEL: "debug"
+
+image:
+  tag: "latest"
+
+INGRESS:
+  ENABLE: true
+  HOSTS:
+    - HOST: "localhost"
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "1Gi"
+  requests:
+    cpu: "100m"
+    memory: "256Mi" 

@@ -1,0 +1,33 @@
+{{- if (empty .Values.existingConfigMap) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMap.name }}
+data:
+  LANGFLOW_DATABASE_URL: {{ .Values.configMap.LANGFLOW_DATABASE_URL }}
+  LANGFLOW_NEW_USER_IS_ACTIVE: "{{ .Values.configMap.LANGFLOW_NEW_USER_IS_ACTIVE }}"
+  LANGFLOW_AUTO_LOGIN: "{{ .Values.configMap.LANGFLOW_AUTO_LOGIN }}"
+  LANGFLOW_SUPERUSER: {{ .Values.configMap.LANGFLOW_SUPERUSER | default "superuser" }}
+  LANGFLOW_SUPERUSER_PASSWORD: {{ .Values.configMap.LANGFLOW_SUPERUSER_PASSWORD | default "superuser" }}
+  LANGFLOW_CACHE_TYPE: {{ .Values.configMap.LANGFLOW_CACHE_TYPE | default "memory" }}
+  LANGFLOW_REDIS_CACHE_EXPIRE: "{{ .Values.configMap.LANGFLOW_REDIS_CACHE_EXPIRE | default "3600" }}"
+  LANGFLOW_REDIS_URL: {{ .Values.configMap.LANGFLOW_REDIS_URL | default "redis://127.0.0.1:6379/0" }}
+  LANGFLOW_REDIS_DB: "{{ .Values.configMap.LANGFLOW_REDIS_DB | default "0" }}"
+  LANGFLOW_REDIS_EXPIRE: "{{ .Values.configMap.LANGFLOW_REDIS_EXPIRE | default "3600" }}"
+  LANGFLOW_REDIS_HOST: {{ .Values.configMap.LANGFLOW_REDIS_HOST | default "127.0.0.1" }}
+  LANGFLOW_REDIS_PASSWORD: {{ .Values.configMap.LANGFLOW_REDIS_PASSWORD | default "redis" }}
+  LANGFLOW_REDIS_PORT: "{{ .Values.configMap.LANGFLOW_REDIS_PORT | default "6379" }}"
+  LANGFLOW_SECRET_KEY: {{ .Values.configMap.LANGFLOW_SECRET_KEY }}
+  BROKER_URL: {{ .Values.configMap.BROKER_URL | default "redis://127.0.0.1:6379/1" }}
+  OPENAI_API_KEY: {{ .Values.configMap.OPENAI_API_KEY }}
+  LANGFLOW_LOG_LEVEL: {{ .Values.configMap.LANGFLOW_LOG_LEVEL | default "info" }}
+  {{ if .Values.configMap.LANGFLOW_LANGFUSE_HOST }}
+  LANGFLOW_LANGFUSE_HOST: {{ .Values.configMap.LANGFLOW_LANGFUSE_HOST }}
+  {{ end }}
+  {{ if .Values.configMap.LANGFLOW_LANGFUSE_SECRET_KEY }}
+  LANGFLOW_LANGFUSE_SECRET_KEY: {{ .Values.configMap.LANGFLOW_LANGFUSE_SECRET_KEY }}
+  {{ end }}
+  {{ if .Values.configMap.LANGFLOW_LANGFUSE_PUBLIC_KEY }}
+  LANGFLOW_LANGFUSE_PUBLIC_KEY: {{ .Values.configMap.LANGFLOW_LANGFUSE_PUBLIC_KEY }}
+  {{ end }}
+{{- end -}}
