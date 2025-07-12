@@ -41,7 +41,7 @@ resource "google_container_cluster" "primary" {
   subnetwork = google_compute_subnetwork.subnet.id
 
   # Enable Workload Identity
-  workload_pool_config {
+  workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
 
