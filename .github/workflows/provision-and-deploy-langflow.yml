@@ -1,0 +1,142 @@
+name: Provision Infra and Deploy Langflow on GKE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: arctic-moon-463710-t0
+  REGION: us-central1
+  ZONE: us-central1-a
+  CLUSTER_NAME: x-sre-agents-cluster
+  NAMESPACE: x-sre-agents
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+jobs:
+  terraform:
+    name: Provision GKE, CloudSQL, Redis
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform-gke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/228332951437/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-sa@arctic-moon-463710-t0.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+
+      - name: Terraform Output (save for next job)
+        id: tf_outputs
+        run: |
+          echo "cluster_name=$(terraform output -raw cluster_name)" >> $GITHUB_OUTPUT
+          echo "cluster_endpoint=$(terraform output -raw cluster_endpoint)" >> $GITHUB_OUTPUT
+          echo "database_connection_name=$(terraform output -raw database_connection_name)" >> $GITHUB_OUTPUT
+          echo "redis_host=$(terraform output -raw redis_host)" >> $GITHUB_OUTPUT
+
+    outputs:
+      cluster_name: ${{ steps.tf_outputs.outputs.cluster_name }}
+      cluster_endpoint: ${{ steps.tf_outputs.outputs.cluster_endpoint }}
+      database_connection_name: ${{ steps.tf_outputs.outputs.database_connection_name }}
+      redis_host: ${{ steps.tf_outputs.outputs.redis_host }}
+
+  deploy:
+    name: Deploy Langflow to GKE
+    needs: terraform
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_CONNECTION_NAME: ${{ needs.terraform.outputs.database_connection_name }}
+      REDIS_HOST: ${{ needs.terraform.outputs.redis_host }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/228332951437/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-sa@arctic-moon-463710-t0.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials ${{ needs.terraform.outputs.cluster_name }} \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }}
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Add Langflow Helm repo
+        run: |
+          helm repo add langflow https://pixelstorecn.github.io/langflow-helm/
+          helm repo update
+
+      - name: Deploy Langflow with Helm
+        run: |
+          helm upgrade --install langflow langflow/langflow \
+            --namespace ${{ env.NAMESPACE }} \
+            --set image.tag=0.6.10 \
+            --set configMap.LANGFLOW_DATABASE_URL="postgresql://langflow:langflow-password-123@${{ env.DATABASE_CONNECTION_NAME }}:5432/langflow" \
+            --set configMap.LANGFLOW_CACHE_TYPE=redis \
+            --set configMap.LANGFLOW_REDIS_URL="redis://${{ env.REDIS_HOST }}:6379/1" \
+            --set service.type=LoadBalancer \
+            --set ingress.enabled=true \
+            --set ingress.hosts[0].host=langflow.x-sre-agents.local \
+            --set ingress.hosts[0].paths[0].path=/ \
+            --set ingress.hosts[0].paths[0].pathType=Prefix \
+            --set resources.requests.memory=512Mi \
+            --set resources.requests.cpu=250m \
+            --set resources.limits.memory=1Gi \
+            --set resources.limits.cpu=500m \
+            --set autoscaling.enabled=true \
+            --set autoscaling.minReplicas=1 \
+            --set autoscaling.maxReplicas=5 \
+            --set autoscaling.targetCPUUtilizationPercentage=80
+
+      - name: Wait for Langflow deployment
+        run: |
+          kubectl rollout status deployment/langflow -n ${{ env.NAMESPACE }} --timeout=300s
+
+      - name: Get Langflow Service External IP
+        run: |
+          echo "Langflow Service External IP:"
+          kubectl get svc -n ${{ env.NAMESPACE }} langflow -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+          echo ""
+          echo "Port forward command:"
+          echo "kubectl port-forward -n ${{ env.NAMESPACE }} svc/langflow 7680:7680"
+
+      - name: Show deployment status
+        run: |
+          echo "=== Pod Status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Service Status ==="
+          kubectl get svc -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Ingress Status ==="
+          kubectl get ingress -n ${{ env.NAMESPACE }} 

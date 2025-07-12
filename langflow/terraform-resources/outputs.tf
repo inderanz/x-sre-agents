@@ -12,4 +12,13 @@ output "redis_host" {
 
 output "ingress_ip" {
   value = google_compute_address.ingress_ip.address
+}
+
+output "cloudsql_connection_string" {
+  value = "postgresql://${var.db_user}:${var.db_password}@${google_sql_database_instance.langflow.private_ip_address}:5432/${var.db_name}"
+  sensitive = true
+}
+
+output "redis_url" {
+  value = "redis://${google_redis_instance.langflow.host}:6379/1"
 } 
