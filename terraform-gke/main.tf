@@ -31,6 +31,10 @@ resource "google_project_service" "redis" {
   service = "redis.googleapis.com"
 }
 
+resource "google_project_service" "servicenetworking" {
+  service = "servicenetworking.googleapis.com"
+}
+
 # VPC Network
 resource "google_compute_network" "vpc" {
   name                    = "x-sre-agents-vpc"
@@ -94,15 +98,6 @@ resource "google_container_cluster" "primary" {
   release_channel {
     channel = "REGULAR"
   }
-
-  # Maintenance policy - more flexible window
-  maintenance_policy {
-    recurring_window {
-      start_time = "2024-01-01T00:00:00Z"
-      end_time   = "2024-01-01T08:00:00Z"
-      recurrence = "FREQ=WEEKLY;BYDAY=SU"
-    }
-  }
 }
 
 # Node Pool
@@ -156,7 +151,7 @@ resource "google_sql_database_instance" "langflow_db" {
   database_version = "POSTGRES_14"
   region           = var.region
 
-  depends_on = [google_project_service.sqladmin]
+  depends_on = [google_project_service.sqladmin, google_project_service.servicenetworking]
 
   settings {
     tier = "db-f1-micro"
