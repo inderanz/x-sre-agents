@@ -12,3 +12,4 @@ pydantic
 pytest
 requests
 a2a-sdk
+psycopg2-binary

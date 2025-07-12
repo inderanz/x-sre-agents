@@ -1,0 +1,142 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PROJECT_ID: arctic-moon-463710-t0
+  CLUSTER_NAME: x-sre-agents-cluster
+  ZONE: us-central1-a
+  NAMESPACE: x-sre-agents
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Google Auth
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: 'projects/228332951437/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+        service_account: 'github-actions-sa@arctic-moon-463710-t0.iam.gserviceaccount.com'
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
+          --project=${{ env.PROJECT_ID }} \
+          --zone=${{ env.ZONE }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push Docker image
+      run: |
+        docker build -t gcr.io/${{ env.PROJECT_ID }}/x-sre-agents:${{ github.sha }} .
+        docker push gcr.io/${{ env.PROJECT_ID }}/x-sre-agents:${{ github.sha }}
+
+    - name: Create namespace
+      run: |
+        kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Deploy to GKE
+      run: |
+        # Create ConfigMap
+        cat <<EOF | kubectl apply -f -
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: x-sre-agents-config
+          namespace: ${{ env.NAMESPACE }}
+        data:
+          DATABASE_URL: "sqlite:///./x-sre-agents.db"
+          LOG_LEVEL: "info"
+        EOF
+
+        # Create deployment
+        cat <<EOF | kubectl apply -f -
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: x-sre-agents
+          namespace: ${{ env.NAMESPACE }}
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: x-sre-agents
+          template:
+            metadata:
+              labels:
+                app: x-sre-agents
+            spec:
+              containers:
+              - name: x-sre-agents
+                image: gcr.io/${{ env.PROJECT_ID }}/x-sre-agents:${{ github.sha }}
+                ports:
+                - containerPort: 8080
+                envFrom:
+                - configMapRef:
+                    name: x-sre-agents-config
+                resources:
+                  requests:
+                    memory: "256Mi"
+                    cpu: "250m"
+                  limits:
+                    memory: "512Mi"
+                    cpu: "500m"
+                livenessProbe:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                readinessProbe:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 5
+        EOF
+
+        # Create service
+        cat <<EOF | kubectl apply -f -
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: x-sre-agents-service
+          namespace: ${{ env.NAMESPACE }}
+        spec:
+          type: LoadBalancer
+          ports:
+          - port: 80
+            targetPort: 8080
+            protocol: TCP
+          selector:
+            app: x-sre-agents
+        EOF
+
+    - name: Wait for deployment
+      run: |
+        kubectl wait --for=condition=available --timeout=300s deployment/x-sre-agents -n ${{ env.NAMESPACE }}
+
+    - name: Get service URL
+      run: |
+        echo "Service URL:"
+        kubectl get svc x-sre-agents-service -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+        echo ""
+        echo "Port forward command:"
+        echo "kubectl port-forward -n ${{ env.NAMESPACE }} svc/x-sre-agents-service 8080:80" 
