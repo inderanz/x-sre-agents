@@ -35,6 +35,22 @@ resource "google_project_service" "servicenetworking" {
   service = "servicenetworking.googleapis.com"
 }
 
+resource "google_compute_global_address" "private_ip_range" {
+  name          = "x-sre-agents-private-ip-range"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = google_compute_network.vpc.id
+  depends_on    = [google_project_service.servicenetworking]
+}
+
+resource "google_service_networking_connection" "private_vpc_connection" {
+  network                 = google_compute_network.vpc.id
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.private_ip_range.name]
+  depends_on              = [google_project_service.servicenetworking, google_compute_global_address.private_ip_range]
+}
+
 # VPC Network
 resource "google_compute_network" "vpc" {
   name                    = "x-sre-agents-vpc"
@@ -151,7 +167,7 @@ resource "google_sql_database_instance" "langflow_db" {
   database_version = "POSTGRES_14"
   region           = var.region
 
-  depends_on = [google_project_service.sqladmin, google_project_service.servicenetworking]
+  depends_on = [google_project_service.sqladmin, google_project_service.servicenetworking, google_service_networking_connection.private_vpc_connection]
 
   settings {
     tier = "db-f1-micro"
