@@ -14,6 +14,23 @@ provider "google" {
   zone    = var.zone
 }
 
+# Enable required APIs
+resource "google_project_service" "container" {
+  service = "container.googleapis.com"
+}
+
+resource "google_project_service" "compute" {
+  service = "compute.googleapis.com"
+}
+
+resource "google_project_service" "sqladmin" {
+  service = "sqladmin.googleapis.com"
+}
+
+resource "google_project_service" "redis" {
+  service = "redis.googleapis.com"
+}
+
 # VPC Network
 resource "google_compute_network" "vpc" {
   name                    = "x-sre-agents-vpc"
@@ -39,6 +56,11 @@ resource "google_container_cluster" "primary" {
 
   network    = google_compute_network.vpc.id
   subnetwork = google_compute_subnetwork.subnet.id
+
+  depends_on = [
+    google_project_service.container,
+    google_project_service.compute
+  ]
 
   # Enable Workload Identity
   workload_identity_config {
@@ -73,11 +95,11 @@ resource "google_container_cluster" "primary" {
     channel = "REGULAR"
   }
 
-  # Maintenance policy
+  # Maintenance policy - more flexible window
   maintenance_policy {
     recurring_window {
-      start_time = "2024-01-01T02:00:00Z"
-      end_time   = "2024-01-01T06:00:00Z"
+      start_time = "2024-01-01T00:00:00Z"
+      end_time   = "2024-01-01T08:00:00Z"
       recurrence = "FREQ=WEEKLY;BYDAY=SU"
     }
   }
@@ -134,6 +156,8 @@ resource "google_sql_database_instance" "langflow_db" {
   database_version = "POSTGRES_14"
   region           = var.region
 
+  depends_on = [google_project_service.sqladmin]
+
   settings {
     tier = "db-f1-micro"
     
@@ -172,6 +196,8 @@ resource "google_redis_instance" "langflow_cache" {
   region         = var.region
 
   authorized_network = google_compute_network.vpc.id
+
+  depends_on = [google_project_service.redis]
 }
 
 # Outputs
