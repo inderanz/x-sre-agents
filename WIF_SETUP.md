@@ -25,7 +25,7 @@ This document contains the complete setup for Workload Identity Federation (WIF)
   - `google.subject=assertion.sub`
   - `attribute.actor=assertion.actor`
   - `attribute.repository=assertion.repository`
-- **Attribute Condition**: `assertion.repository=='harshvardhan/x-sre-agents'`
+- **Attribute Condition**: `assertion.repository=='inderanz/x-sre-agents'`
 
 ### Service Account
 - **Service Account Name**: `github-actions-sa`
@@ -78,7 +78,7 @@ gcloud iam workload-identity-pools providers create-oidc "github-provider" \
   --display-name="GitHub provider" \
   --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository" \
   --issuer-uri="https://token.actions.githubusercontent.com" \
-  --attribute-condition="assertion.repository=='harshvardhan/x-sre-agents'"
+  --attribute-condition="assertion.repository=='inderanz/x-sre-agents'"
 ```
 
 ### 3. Create Service Account
@@ -94,7 +94,7 @@ gcloud iam service-accounts create "github-actions-sa" \
 gcloud iam service-accounts add-iam-policy-binding "github-actions-sa@arctic-moon-463710-t0.iam.gserviceaccount.com" \
   --project="arctic-moon-463710-t0" \
   --role="roles/iam.workloadIdentityUser" \
-  --member="principalSet://iam.googleapis.com/projects/228332951437/locations/global/workloadIdentityPools/github-pool/attribute.repository/harshvardhan/x-sre-agents"
+  --member="principalSet://iam.googleapis.com/projects/228332951437/locations/global/workloadIdentityPools/github-pool/attribute.repository/inderanz/x-sre-agents"
 ```
 
 ### 5. Grant Additional Roles
