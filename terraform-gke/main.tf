@@ -190,8 +190,6 @@ resource "google_container_node_pool" "primary_nodes" {
     }
   }
 
-  pod_ipv4_cidr_size = 24
-
   depends_on = [google_container_cluster.primary]
 }
 
