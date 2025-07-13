@@ -86,6 +86,9 @@ jobs:
           gcloud components install gke-gcloud-auth-plugin
           echo "use_application_default_credentials=true" >> $HOME/.config/gcloud/application_default_credentials.json
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Get GKE credentials
         run: |
           gcloud container clusters get-credentials ${{ needs.terraform.outputs.cluster_name }} \
@@ -99,7 +102,7 @@ jobs:
       - name: Get CloudSQL Private IP
         run: |
           echo "Getting CloudSQL private IP..."
-          CLOUDSQL_PRIVATE_IP=$(gcloud sql instances describe langflow-db-instance --format="value(ipAddresses[0].ipAddress)" --filter="ipAddresses.type=PRIVATE")
+          CLOUDSQL_PRIVATE_IP=$(gcloud sql instances describe langflow-db-instance --format="json" | jq -r '.ipAddresses[] | select(.type=="PRIVATE").ipAddress')
           echo "CloudSQL Private IP: $CLOUDSQL_PRIVATE_IP"
           echo "CLOUDSQL_PRIVATE_IP=$CLOUDSQL_PRIVATE_IP" >> $GITHUB_ENV
 
