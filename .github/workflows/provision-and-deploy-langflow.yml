@@ -41,6 +41,15 @@ jobs:
         with:
           terraform_version: 1.7.5
 
+      - name: Remove stale Terraform lock file (if any)
+        run: |
+          if gsutil ls gs://x-sre-agents-tfstate/terraform/state/default.tflock 2>/dev/null; then
+            echo "Stale Terraform lock file found. Removing..."
+            gsutil rm gs://x-sre-agents-tfstate/terraform/state/default.tflock
+          else
+            echo "No stale lock file found."
+          fi
+
       - name: Terraform Init
         run: terraform init
 
