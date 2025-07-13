@@ -96,14 +96,9 @@ jobs:
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Add Langflow Helm repo
+      - name: Deploy Langflow with Local Helm Chart
         run: |
-          helm repo add langflow https://pixelstorecn.github.io/langflow-helm/
-          helm repo update
-
-      - name: Deploy Langflow with Helm
-        run: |
-          helm upgrade --install langflow langflow/langflow \
+          helm upgrade --install langflow ./langflow/helm \
             --namespace ${{ env.NAMESPACE }} \
             --set image.tag=0.6.10 \
             --set configMap.LANGFLOW_DATABASE_URL="postgresql://langflow:langflow-password-123@${{ env.DATABASE_CONNECTION_NAME }}:5432/langflow" \
