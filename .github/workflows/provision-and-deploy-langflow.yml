@@ -96,12 +96,19 @@ jobs:
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Get CloudSQL Private IP
+        run: |
+          echo "Getting CloudSQL private IP..."
+          CLOUDSQL_PRIVATE_IP=$(gcloud sql instances describe langflow-db-instance --format="value(ipAddresses[0].ipAddress)" --filter="ipAddresses.type=PRIVATE")
+          echo "CloudSQL Private IP: $CLOUDSQL_PRIVATE_IP"
+          echo "CLOUDSQL_PRIVATE_IP=$CLOUDSQL_PRIVATE_IP" >> $GITHUB_ENV
+
       - name: Deploy Langflow with Local Helm Chart
         run: |
           helm upgrade --install langflow ./langflow/helm \
             --namespace ${{ env.NAMESPACE }} \
             --set image.tag=0.6.10 \
-            --set configMap.LANGFLOW_DATABASE_URL="postgresql://langflow:langflow-password-123@${{ env.DATABASE_CONNECTION_NAME }}:5432/langflow" \
+            --set configMap.LANGFLOW_DATABASE_URL="postgresql://langflow:langflow-password-123@${{ env.CLOUDSQL_PRIVATE_IP }}:5432/langflow" \
             --set configMap.LANGFLOW_CACHE_TYPE=redis \
             --set configMap.LANGFLOW_REDIS_URL="redis://${{ env.REDIS_HOST }}:6379/1" \
             --set service.type=LoadBalancer \
@@ -139,13 +146,31 @@ jobs:
         run: |
           kubectl rollout status deployment/langflow-langflow-helm -n ${{ env.NAMESPACE }} --timeout=300s
 
+      - name: Wait for LoadBalancer service to get external IP
+        run: |
+          echo "Waiting for LoadBalancer service to get external IP..."
+          # Wait for service to be ready
+          kubectl wait --for=condition=Ready service/langflow-langflow-helm -n ${{ env.NAMESPACE }} --timeout=300s
+          # Wait for external IP to be assigned
+          while [[ $(kubectl get svc -n ${{ env.NAMESPACE }} langflow-langflow-helm -o jsonpath='{.status.loadBalancer.ingress[0].ip}') == "" ]]; do
+            echo "Waiting for external IP to be assigned..."
+            sleep 10
+          done
+          echo "Service is ready with external IP!"
+
       - name: Get Langflow Service External IP
         run: |
           echo "Langflow Service External IP:"
-          kubectl get svc -n ${{ env.NAMESPACE }} langflow-langflow-helm -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-          echo ""
-          echo "Port forward command:"
-          echo "kubectl port-forward -n ${{ env.NAMESPACE }} svc/langflow-langflow-helm 7680:7680"
+          EXTERNAL_IP=$(kubectl get svc -n ${{ env.NAMESPACE }} langflow-langflow-helm -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+          if [[ -z "$EXTERNAL_IP" ]]; then
+            echo "Service not found or no external IP yet. Checking all services:"
+            kubectl get svc -n ${{ env.NAMESPACE }}
+          else
+            echo "$EXTERNAL_IP"
+            echo ""
+            echo "Port forward command:"
+            echo "kubectl port-forward -n ${{ env.NAMESPACE }} svc/langflow-langflow-helm 7680:7680"
+          fi
 
       - name: Show deployment status
         run: |
