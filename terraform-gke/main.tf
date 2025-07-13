@@ -116,56 +116,56 @@ resource "google_container_cluster" "primary" {
   }
 }
 
-# Node Pool
-resource "google_container_node_pool" "primary_nodes" {
-  name       = "${var.cluster_name}-node-pool"
-  location   = var.zone
-  cluster    = google_container_cluster.primary.name
-  node_count = var.node_count
+# Node Pool - Commented out to avoid update issues
+# resource "google_container_node_pool" "primary_nodes" {
+#   name       = "${var.cluster_name}-node-pool"
+#   location   = var.zone
+#   cluster    = google_container_cluster.primary.name
+#   node_count = var.node_count
 
-  autoscaling {
-    min_node_count = var.min_node_count
-    max_node_count = var.max_node_count
-  }
+#   autoscaling {
+#     min_node_count = var.min_node_count
+#     max_node_count = var.max_node_count
+#   }
 
-  node_config {
-    machine_type = var.machine_type
-    disk_size_gb = 100
-    disk_type    = "pd-standard"
-    image_type   = "COS_CONTAINERD"
+#   node_config {
+#     machine_type = var.machine_type
+#     disk_size_gb = 100
+#     disk_type    = "pd-standard"
+#     image_type   = "COS_CONTAINERD"
 
-    # OAuth scopes
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/logging.write",
-      "https://www.googleapis.com/auth/monitoring",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/devstorage.read_only"
-    ]
+#     # OAuth scopes
+#     oauth_scopes = [
+#       "https://www.googleapis.com/auth/logging.write",
+#       "https://www.googleapis.com/auth/monitoring",
+#       "https://www.googleapis.com/auth/compute",
+#       "https://www.googleapis.com/auth/devstorage.read_only"
+#     ]
 
-    # Workload Identity
-    workload_metadata_config {
-      mode = "GKE_METADATA"
-    }
+#     # Workload Identity
+#     workload_metadata_config {
+#       mode = "GKE_METADATA"
+#     }
 
-    # Labels
-    labels = {
-      environment = "production"
-      app         = "x-sre-agents"
-    }
+#     # Labels
+#     labels = {
+#       environment = "production"
+#       app         = "x-sre-agents"
+#     }
 
-    # Taints
-    taint {
-      key    = "app"
-      value  = "x-sre-agents"
-      effect = "NO_SCHEDULE"
-    }
+#     # Taints
+#     taint {
+#       key    = "app"
+#       value  = "x-sre-agents"
+#       effect = "NO_SCHEDULE"
+#     }
 
-    # Resource labels
-    resource_labels = {
-      "app" = "x-sre-agents"
-    }
-  }
-}
+#     # Resource labels
+#     resource_labels = {
+#       "app" = "x-sre-agents"
+#     }
+#   }
+# }
 
 # Cloud SQL Instance (for Langflow database)
 resource "google_sql_database_instance" "langflow_db" {
