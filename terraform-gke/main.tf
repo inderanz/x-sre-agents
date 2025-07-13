@@ -114,87 +114,11 @@ resource "google_container_cluster" "primary" {
   release_channel {
     channel = "REGULAR"
   }
-}
 
-# Node Pool - Production Grade
-resource "google_container_node_pool" "primary_nodes" {
-  name       = "${var.cluster_name}-node-pool"
-  location   = var.zone
-  cluster    = google_container_cluster.primary.name
-  node_count = var.node_count
-
-  version = "1.32.4-gke.1415000" # match current node version
-
-  autoscaling {
-    min_node_count = var.min_node_count
-    max_node_count = var.max_node_count
-    location_policy = "BALANCED"
+  # Enable Autopilot
+  autopilot {
+    enabled = true
   }
-
-  management {
-    auto_repair  = true
-    auto_upgrade = true
-  }
-
-  upgrade_settings {
-    max_surge   = 1
-    strategy    = "SURGE"
-  }
-
-  node_config {
-    machine_type = var.machine_type
-    disk_size_gb = 100
-    disk_type    = "pd-standard"
-    image_type   = "COS_CONTAINERD"
-    service_account = "default"
-
-    # OAuth scopes
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/logging.write",
-      "https://www.googleapis.com/auth/monitoring",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/devstorage.read_only"
-    ]
-
-    # Workload Identity
-    workload_metadata_config {
-      mode = "GKE_METADATA"
-    }
-
-    # Labels
-    labels = {
-      environment = "production"
-      app         = "x-sre-agents"
-    }
-
-    # Resource labels
-    resource_labels = {
-      "app" = "x-sre-agents"
-      "goog-gke-node-pool-provisioning-model" = "on-demand"
-    }
-
-    metadata = {
-      disable-legacy-endpoints = "true"
-    }
-
-    shielded_instance_config {
-      enable_integrity_monitoring = true
-    }
-
-    taint {
-      key    = "app"
-      value  = "x-sre-agents"
-      effect = "NO_SCHEDULE"
-    }
-
-    # Add missing required blocks for GKE API compatibility
-    kubelet_config {
-      cpu_manager_policy = "none"
-    }
-    tags = []
-  }
-
-  depends_on = [google_container_cluster.primary]
 }
 
 # Cloud SQL Instance (for Langflow database)
