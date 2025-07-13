@@ -134,15 +134,15 @@ jobs:
 
       - name: Wait for Langflow deployment
         run: |
-          kubectl rollout status deployment/langflow -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl rollout status deployment/langflow-langflow-helm -n ${{ env.NAMESPACE }} --timeout=300s
 
       - name: Get Langflow Service External IP
         run: |
           echo "Langflow Service External IP:"
-          kubectl get svc -n ${{ env.NAMESPACE }} langflow -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+          kubectl get svc -n ${{ env.NAMESPACE }} langflow-langflow-helm -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
           echo ""
           echo "Port forward command:"
-          echo "kubectl port-forward -n ${{ env.NAMESPACE }} svc/langflow 7680:7680"
+          echo "kubectl port-forward -n ${{ env.NAMESPACE }} svc/langflow-langflow-helm 7680:7680"
 
       - name: Show deployment status
         run: |
