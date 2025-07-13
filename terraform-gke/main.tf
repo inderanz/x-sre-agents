@@ -177,8 +177,6 @@ resource "google_container_node_pool" "primary_nodes" {
       disable-legacy-endpoints = "true"
     }
 
-    logging_variant = "DEFAULT"
-
     shielded_instance_config {
       enable_integrity_monitoring = true
     }
@@ -190,12 +188,13 @@ resource "google_container_node_pool" "primary_nodes" {
     }
 
     # Add missing required blocks for GKE API compatibility
-    kubelet_config {}
-    linux_node_config {}
-    tags = []
-    logging_config {
-      variant = "DEFAULT"
+    kubelet_config {
+      cpu_manager_policy = "none"
     }
+    linux_node_config {
+      sysctls = {}
+    }
+    tags = []
   }
 
   depends_on = [google_container_cluster.primary]
