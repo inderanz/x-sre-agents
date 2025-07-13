@@ -1,6 +1,6 @@
 apiVersion: v2
 name: langflow-helm
-description: A Helm chart for Kubernetes
+description: A production-grade Helm chart for Langflow on Kubernetes with CloudSQL integration
 
 # A chart can be either an 'application' or a 'library' chart.
 #
@@ -15,4 +15,28 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.0
+version: 1.0.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning (https://semver.org/).
+appVersion: "0.6.10"
+
+# Keywords to help find chart
+keywords:
+  - langflow
+  - ai
+  - workflow
+  - automation
+
+# Home page of the project
+home: https://github.com/inderanz/x-sre-agents
+
+# Sources
+sources:
+  - https://github.com/inderanz/x-sre-agents
+
+# Maintainers
+maintainers:
+  - name: x-sre-agents
+    email: admin@x-sre-agents.com
