@@ -44,8 +44,25 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
+      - name: Import existing node pool if it exists
+        run: |
+          echo "Checking if node pool already exists..."
+          if gcloud container node-pools describe x-sre-agents-cluster-node-pool \
+            --cluster=x-sre-agents-cluster \
+            --zone=us-central1-a \
+            --project=arctic-moon-463710-t0 >/dev/null 2>&1; then
+            echo "Node pool exists, importing into Terraform state..."
+            terraform import google_container_node_pool.primary_nodes \
+              projects/arctic-moon-463710-t0/locations/us-central1-a/clusters/x-sre-agents-cluster/nodePools/x-sre-agents-cluster-node-pool || true
+          else
+            echo "Node pool does not exist, will be created by Terraform"
+          fi
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
       - name: Terraform Apply
-        run: terraform apply -auto-approve
+        run: terraform apply tfplan
 
       - name: Terraform Output (save for next job)
         id: tf_outputs
