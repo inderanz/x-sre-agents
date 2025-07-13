@@ -84,7 +84,7 @@ jobs:
       - name: Get GKE credentials
         run: |
           gcloud container clusters get-credentials ${{ needs.terraform.outputs.cluster_name }} \
-            --region ${{ env.REGION }} \
+            --zone ${{ env.ZONE }} \
             --project ${{ env.PROJECT_ID }}
 
       - name: Create namespace if not exists
