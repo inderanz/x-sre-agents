@@ -118,6 +118,20 @@ jobs:
             --set autoscaling.maxReplicas=5 \
             --set autoscaling.targetCPUUtilizationPercentage=80
 
+      - name: Debug - Check Helm deployment status
+        run: |
+          echo "=== Helm List ==="
+          helm list -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== All Resources in Namespace ==="
+          kubectl get all -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Pods ==="
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Events ==="
+          kubectl get events -n ${{ env.NAMESPACE }} --sort-by='.lastTimestamp'
+
       - name: Wait for Langflow deployment
         run: |
           kubectl rollout status deployment/langflow -n ${{ env.NAMESPACE }} --timeout=300s
