@@ -132,6 +132,7 @@ resource "google_container_node_pool" "primary_nodes" {
     machine_type = var.machine_type
     disk_size_gb = 100
     disk_type    = "pd-standard"
+    image_type   = "COS_CONTAINERD"
 
     # OAuth scopes
     oauth_scopes = [
@@ -157,6 +158,11 @@ resource "google_container_node_pool" "primary_nodes" {
       key    = "app"
       value  = "x-sre-agents"
       effect = "NO_SCHEDULE"
+    }
+
+    # Resource labels
+    resource_labels = {
+      "app" = "x-sre-agents"
     }
   }
 }
