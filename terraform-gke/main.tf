@@ -123,9 +123,22 @@ resource "google_container_node_pool" "primary_nodes" {
   cluster    = google_container_cluster.primary.name
   node_count = var.node_count
 
+  version = "1.32.4-gke.1415000" # match current node version
+
   autoscaling {
     min_node_count = var.min_node_count
     max_node_count = var.max_node_count
+    location_policy = "BALANCED"
+  }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+
+  upgrade_settings {
+    max_surge   = 1
+    strategy    = "SURGE"
   }
 
   node_config {
@@ -133,6 +146,7 @@ resource "google_container_node_pool" "primary_nodes" {
     disk_size_gb = 100
     disk_type    = "pd-standard"
     image_type   = "COS_CONTAINERD"
+    service_account = "default"
 
     # OAuth scopes
     oauth_scopes = [
@@ -156,8 +170,27 @@ resource "google_container_node_pool" "primary_nodes" {
     # Resource labels
     resource_labels = {
       "app" = "x-sre-agents"
+      "goog-gke-node-pool-provisioning-model" = "on-demand"
+    }
+
+    metadata = {
+      disable-legacy-endpoints = "true"
+    }
+
+    logging_variant = "DEFAULT"
+
+    shielded_instance_config {
+      enable_integrity_monitoring = true
+    }
+
+    taint {
+      key    = "app"
+      value  = "x-sre-agents"
+      effect = "NO_SCHEDULE"
     }
   }
+
+  pod_ipv4_cidr_size = 24
 
   depends_on = [google_container_cluster.primary]
 }
