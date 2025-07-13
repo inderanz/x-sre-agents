@@ -33,6 +33,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      serviceAccountName: langflow-sa
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -49,6 +50,11 @@ spec:
             tcpSocket:
               port: 7860
             initialDelaySeconds: 120
+          startupProbe:
+            tcpSocket:
+              port: 5432
+            failureThreshold: 30
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
@@ -128,6 +134,28 @@ spec:
                   key: LANGFLOW_LANGFUSE_PUBLIC_KEY
                   name: langflow-configmap
             {{ end }}
+        {{- if .Values.cloudsql.enabled }}
+        - name: cloudsql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.1
+          command:
+            - "/cloud-sql-proxy"
+            - "{{ .Values.cloudsql.instanceConnectionName }}"
+            - "--port=5432"
+            - "--address=0.0.0.0"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

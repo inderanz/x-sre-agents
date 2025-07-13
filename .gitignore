@@ -1,1 +1,70 @@
+# Terraform
 terraform-gke/terraform.tfstate*
+terraform-gke/.terraform/
+terraform-gke/.terraform.lock.hcl
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+
+# Helm
+*.tgz
+charts/*.tgz
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.crt
+
+# Build artifacts
+dist/
+build/
+*.pyc
+__pycache__/
+
+# Node modules (if any)
+node_modules/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Docker
+.dockerignore
+Dockerfile.prod
+
+# Backup files
+*.bak
+*.backup

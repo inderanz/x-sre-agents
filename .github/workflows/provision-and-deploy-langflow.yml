@@ -110,15 +110,15 @@ jobs:
         run: |
           helm upgrade --install langflow ./langflow/helm \
             --namespace ${{ env.NAMESPACE }} \
-            --set image.tag=0.6.10-deploy \
-            --set configMap.LANGFLOW_DATABASE_URL="postgresql://langflow:langflow-password-123@${{ env.CLOUDSQL_PRIVATE_IP }}:5432/langflow" \
-            --set configMap.LANGFLOW_CACHE_TYPE=redis \
+            --set image.tag=0.6.10 \
+            --set configMap.LANGFLOW_CACHE_TYPE=memory \
+            --set configMap.LANGFLOW_DATABASE_URL="postgresql://langflow:langflow-password-123@localhost:5432/langflow" \
             --set configMap.LANGFLOW_REDIS_URL="redis://${{ env.REDIS_HOST }}:6379/1" \
             --set service.type=LoadBalancer \
             --set ingress.enabled=true \
-            --set ingress.hosts[0].host=langflow.x-sre-agents.local \
-            --set ingress.hosts[0].paths[0].path=/ \
-            --set ingress.hosts[0].paths[0].pathType=Prefix \
+            --set "ingress.hosts[0].host=langflow.x-sre-agents.local" \
+            --set "ingress.hosts[0].paths[0].path=/" \
+            --set "ingress.hosts[0].paths[0].pathType=Prefix" \
             --set resources.requests.memory=512Mi \
             --set resources.requests.cpu=250m \
             --set resources.limits.memory=1Gi \
@@ -127,9 +127,11 @@ jobs:
             --set autoscaling.minReplicas=1 \
             --set autoscaling.maxReplicas=5 \
             --set autoscaling.targetCPUUtilizationPercentage=80 \
-            --set tolerations[0].key=app \
-            --set tolerations[0].value=x-sre-agents \
-            --set tolerations[0].effect=NoSchedule
+            --set "tolerations[0].key=app" \
+            --set "tolerations[0].value=x-sre-agents" \
+            --set "tolerations[0].effect=NoSchedule" \
+            --set cloudsql.enabled=true \
+            --set cloudsql.instanceConnectionName="${{ env.DATABASE_CONNECTION_NAME }}"
 
       - name: Debug - Check Helm deployment status
         run: |
