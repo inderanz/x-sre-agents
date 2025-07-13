@@ -188,6 +188,14 @@ resource "google_container_node_pool" "primary_nodes" {
       value  = "x-sre-agents"
       effect = "NO_SCHEDULE"
     }
+
+    # Add missing required blocks for GKE API compatibility
+    kubelet_config {}
+    linux_node_config {}
+    tags = []
+    logging_config {
+      variant = "DEFAULT"
+    }
   }
 
   depends_on = [google_container_cluster.primary]
