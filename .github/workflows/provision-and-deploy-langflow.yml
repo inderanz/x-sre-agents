@@ -116,7 +116,10 @@ jobs:
             --set autoscaling.enabled=true \
             --set autoscaling.minReplicas=1 \
             --set autoscaling.maxReplicas=5 \
-            --set autoscaling.targetCPUUtilizationPercentage=80
+            --set autoscaling.targetCPUUtilizationPercentage=80 \
+            --set tolerations[0].key=app \
+            --set tolerations[0].value=x-sre-agents \
+            --set tolerations[0].effect=NoSchedule
 
       - name: Debug - Check Helm deployment status
         run: |
