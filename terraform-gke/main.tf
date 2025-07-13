@@ -191,9 +191,6 @@ resource "google_container_node_pool" "primary_nodes" {
     kubelet_config {
       cpu_manager_policy = "none"
     }
-    linux_node_config {
-      sysctls = {}
-    }
     tags = []
   }
 
