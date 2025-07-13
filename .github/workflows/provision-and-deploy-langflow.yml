@@ -110,7 +110,7 @@ jobs:
         run: |
           helm upgrade --install langflow ./langflow/helm \
             --namespace ${{ env.NAMESPACE }} \
-            --set image.tag=0.6.10 \
+            --set image.tag=0.6.10-deploy \
             --set configMap.LANGFLOW_DATABASE_URL="postgresql://langflow:langflow-password-123@${{ env.CLOUDSQL_PRIVATE_IP }}:5432/langflow" \
             --set configMap.LANGFLOW_CACHE_TYPE=redis \
             --set configMap.LANGFLOW_REDIS_URL="redis://${{ env.REDIS_HOST }}:6379/1" \
